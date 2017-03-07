@@ -1,4 +1,4 @@
-#!/bin/env/ python
+#!/bin/env python
 ''' Routine to calculate phase arrivals '''
 from obspy.taup import TauPyModel
 
@@ -24,3 +24,4 @@ pTime=arr.time
 arrivals = model.get_ray_paths(source_depth_in_km=depth, 
                                distance_in_degree=distance)
 
+arrivals.plot()

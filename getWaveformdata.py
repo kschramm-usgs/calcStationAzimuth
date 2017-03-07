@@ -1,4 +1,4 @@
-#!/bin/env/ python
+#!/bin/env python
 
 ''' 
 Routine to get waveform data from IRIS given network and station
@@ -24,8 +24,5 @@ stLat = 34.945910
 stLon = -106.457200
 stDepth = -1820
 
-arrivals = model.get_travel_times_geo(source_depth_in_km=evDepth,
-                                      source_latitude_in_deg = evLat,
-                                      source_longitude_in_deg = evLon,
-                                      receiver_latitude_in_deg = stLat,
-                                      receiver_longitude_in_deg = stLon)
+st = client.get_waveforms("IU", "ANMO", "00", "BHZ", t, t+60*60)
+st.plot()
