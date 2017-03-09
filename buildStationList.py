@@ -16,7 +16,7 @@ inventory = client.get_stations(network="IU", station="*", starttime=t)
 # to plot up all the stations...
 #inventory.plot()
 
-# to get the station coordinatesinformation
+# to get the station coordinates
 station_coordinates = []
 for network in inventory:
     for station in network:
