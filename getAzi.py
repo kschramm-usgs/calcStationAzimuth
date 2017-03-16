@@ -43,7 +43,9 @@ for network in inventory:
 print("calculating travel times and requesting data")
 model = TauPyModel(model="iasp91")
 for station in station_coordinates:
+# first calculate the source-receiver distance
     DegDist = locations2degrees(station[2], station[3], eventLat, eventLon)
+    Station
 # need to add tolerance for distance so that we are only using P-arrivals
 # need to talk to tyler about which P should be used?  P? Pdiff? pP? PP?
 # tyler also feels we really want a direct P at teleseismic distances, so 
@@ -62,16 +64,20 @@ for station in station_coordinates:
                                       bTime,eTime,attach_response=True)
         except:
             print("No data for station "+station[1])
-# i feel like there is something else that needs to go in the exception to tell
-# it to go to the next station...
-
+	    continue #use a continue to go back to the beginning of the loop
 # take a look at the data
         st.plot()
-        prefilt = (1/4.,1/2., 10., 20.) # this may need to be changed.
-        st.remove_response(output="DISP",pre_filt=prefilt,plot=True)
+        prefilt = (1/4.,1/2., 10., 20.) # this may need to be changed, but 
+#                                         I will need to discuss with tyler
+        st.remove_response(output="DISP",pre_filt=prefilt)
+# use this line if you want to see the plots
+#        st.remove_response(output="DISP",pre_filt=prefilt,plot=True)
 # 
+       
+
+# rotate, if needed
     else:
         print("Station "+ station[1] +"doesn't fit in parameters for P-wave arrivals")
-# before we do anything we want to get to displacement.
+
     
 

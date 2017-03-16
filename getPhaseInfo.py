@@ -7,8 +7,10 @@ model = TauPyModel(model="iasp91")
 
 # the source - receiver distance in degrees
 distance = 45
+distance = 75.73
 # the source depth in km
 depth = 500
+depth = 37.5
 # list of phases you are interested in
 phaseList = ["P", "S", "PKiKP"]
 
