@@ -35,7 +35,7 @@ for network in inventory:
     for station in network:
         station_coordinates.append((network.code, station.code, 
                                     station.latitude, station.longitude, 
-                                    station.elevation))
+                                    station.elevation,station.azimuth))
 
 # then for each station in the list get the distance and azimuth
 # need to think about what source-receiver distances we want to use
@@ -76,11 +76,16 @@ for station in station_coordinates:
 # use this line if you want to see the plots
 #        st.remove_response(output="DISP",pre_filt=prefilt,plot=True)
          
-# rotate, if needed
-#        st.rotate('NE->RT')
         st.remove_sensitvity(inventory)
 # take a look at the data
         st.plot()
+# rotate, if needed
+# make sure we are in NE orientation
+#        BH1_rot = st[0].data*sin(cha
+# XXX need to figure out how to get the azimuth here... I feel like i need
+# XXX some sort of iterator to get the right position
+        
+#        st.rotate('NE->RT')
          
         
     else:
