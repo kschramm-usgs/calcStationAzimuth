@@ -6,8 +6,9 @@ from obspy.taup import TauPyModel
 model = TauPyModel(model="iasp91")
 
 # the source - receiver distance in degrees
-distance = 45
-distance = 75.73
+distance = 67.62
+#distance = 45
+#distance = 75.73
 # the source depth in km
 depth = 500
 depth = 37.5
@@ -21,6 +22,7 @@ arrivals = model.get_travel_times(source_depth_in_km=depth,
 # to get the travel time for a phase...
 arr = arrivals[0] 
 pTime=arr.time
+print "The pwave arrives at: "+str(pTime)
 
 # if  you want to plot the raypaths... this is totally cool!
 arrivals = model.get_ray_paths(source_depth_in_km=depth, 

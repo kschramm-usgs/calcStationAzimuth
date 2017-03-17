@@ -14,7 +14,8 @@ client = Client("IRIS")
 
 # event time - this can be calculate based on the p-wave arrival
 # this is for an event in Bolivia
-t = UTCDateTime("2017-02-21T14:09:04.000")
+eventTime = UTCDateTime("2017-02-21T14:09:04.000")
+t = eventTime+652
 evMag = 6.5
 evDepth = 597.9
 evLat = -19.284
@@ -26,3 +27,4 @@ stDepth = -1820
 
 st = client.get_waveforms("IU", "ANMO", "00", "BHZ", t, t+60*60)
 st.plot()
+

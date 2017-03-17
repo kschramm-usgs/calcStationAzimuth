@@ -12,6 +12,9 @@ client = Client("IRIS")
 t = UTCDateTime("2017-02-21T14:09:04")
 
 inventory = client.get_stations(network="IU", station="*", starttime=t)
+# if you need response information, use:
+#inventory = client.get_stations(network="IU", station="*", starttime=t, 
+                                channel="BH*", level="response")
 
 # to plot up all the stations...
 #inventory.plot()
