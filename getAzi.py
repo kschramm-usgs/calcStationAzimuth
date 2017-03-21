@@ -5,6 +5,7 @@ from obspy.clients.fdsn import Client
 from obspy.geodetics.base import locations2degrees
 from obspy.geodetics.base import gps2dist_azimuth
 from obspy.taup import TauPyModel
+from numpy import sin, cos
 
 ''' 
 This function will calculate the azimuth of a station from particle motion.
@@ -26,6 +27,7 @@ network = "IU"
 print("building station list for the event")
 client = Client("IRIS")
 inventory = client.get_stations(network="IU", station="*", 
+                                channel="BH1",level="response",
                                 starttime=eventTime)
 
 # next, get the station coordinates
@@ -33,9 +35,10 @@ print("getting station coordinates")
 station_coordinates = []
 for network in inventory:
     for station in network:
-        station_coordinates.append((network.code, station.code, 
-                                    station.latitude, station.longitude, 
-                                    station.elevation,station.azimuth))
+        for channel in station:
+            station_coordinates.append((network.code, station.code, 
+                                        station.latitude, station.longitude, 
+                                        station.elevation,channel.azimuth))
 
 # then for each station in the list get the distance and azimuth
 # need to think about what source-receiver distances we want to use
@@ -75,19 +78,36 @@ for station in station_coordinates:
 #        st.remove_response(output="DISP",pre_filt=prefilt)
 # use this line if you want to see the plots
 #        st.remove_response(output="DISP",pre_filt=prefilt,plot=True)
+# Break up the stream into traces to remove the gain
+        BHZ = st[0]
+        BH1 = st[1]
+        BH2 = st[2]
+
+        st[0] = BHZ.remove_sensitivity()
+        st[1] = BH1.remove_sensitivity()
+        st[2] = BH2.remove_sensitivity()
          
-        st.remove_sensitvity(inventory)
 # take a look at the data
         st.plot()
-# rotate, if needed
 # make sure we are in NE orientation
-#        BH1_rot = st[0].data*sin(cha
-# XXX need to figure out how to get the azimuth here... I feel like i need
-# XXX some sort of iterator to get the right position
+        BHE = st[2]
+        BHN = st[1]
+        BHZ = st[0]
+        station_orientation = station[5]
+        if (station_orientation != 0.0):
+            BHE = ( sin(station_orientation)*st[1] 
+                +   cos(station_orientation)*st[2])
+            BHN = (-sin(station_orientation)*st[2] 
+                +   cos(station_orientation)*st[1])
         
+# next we need to filter.
+        tr_filt = BHZ
+        tr_filt.filter('lowpass', freq=0.5, corners = 4, zerophase = True) 
+
+
+
 #        st.rotate('NE->RT')
          
-        
     else:
         print("Station "+ station[1] +"doesn't fit in parameters for P-wave arrivals")
 

@@ -44,7 +44,7 @@ for station in station_coordinates:
 
         arrTime=eventTime + arrivals[0].time    
         bTime=arrTime-200
-        eTime=arrTime+50
+        eTime=arrTime+300
         try:
             st = client.get_waveforms(station[0],station[1],"00","BH?",
                                       bTime,eTime,attach_response=True)
