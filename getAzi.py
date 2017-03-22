@@ -28,7 +28,7 @@ print("building station list for the event")
 client = Client("IRIS")
 inventory = client.get_stations(network="IU", station="ANMO", 
                                 channel="BH1",level="response",
-                                starttime=eventTime)
+                                location="00",starttime=eventTime)
 
 # next, get the station coordinates
 print("getting station coordinates")
@@ -82,10 +82,6 @@ for station in station_coordinates:
         BH1 = st[0]
         BH2 = st[1]
         BHZ = st[2]
-        print('check the component')
-        print('check the component')
-        BHZ.plot()
-        BH1.plot()
 
         st[0] = BH1.remove_sensitivity()
         st[1] = BH2.remove_sensitivity()
@@ -93,7 +89,10 @@ for station in station_coordinates:
          
 # take a look at the data
         st.plot()
+
 # make sure we are in NE orientation
+# we may decide to take this step out - find out if we assume N/S does
+# the program spit out the azimuth we have in the metadata
         BHN = st[0]
         BHE = st[1]
         BHZ = st[2]
@@ -103,14 +102,23 @@ for station in station_coordinates:
                 +   cos(station_orientation)*st[1])
             BHN.data = (-sin(station_orientation)*st[2] 
                 +   cos(station_orientation)*st[0])
-        BHE.plot()
-        BHN.plot()
-
         
+        st[0] = BHN
+        st[1] = BHE
 # next we need to filter.
-#        tr_filt = BHZ
-#        tr_filt.filter('lowpass', freq=0.5, corners = 4, zerophase = True) 
-         
+        st[0] = BH1.detrend('demean')
+        st[1] = BH2.detrend('demean')
+        st[2] = BHZ.detrend('demean')
+        st.plot()
+        st[0] = BH1.taper(max_percentage=0.05)
+        st[1] = BH2.taper(max_percentage=0.05)
+        st[2] = BHZ.taper(max_percentage=0.05)
+        st.plot()
+# now, we actually filter!
+        st[0]=BH1.filter('lowpass', freq=0.5, corners=4, zerophase=True)
+        st[1]=BH2.filter('lowpass', freq=0.5, corners=4, zerophase=True)
+        st[2]=BHZ.filter('lowpass', freq=0.5, corners=4, zerophase=True)
+        st.plot() 
          
     else:
         print("Station "+ station[1] +"doesn't fit in parameters for P-wave arrivals")

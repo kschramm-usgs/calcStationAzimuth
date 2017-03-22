@@ -51,7 +51,7 @@ for station in station_coordinates:
         except:
             print("No data for station "+station[1])
             continue        
-# Break up the stream into traces to remove the gain
+# Break up the stream into traces to remove the gain, taper, demean, filter,etc
         BH1 = st[0]
         BH2 = st[1]
         BHZ = st[2]
