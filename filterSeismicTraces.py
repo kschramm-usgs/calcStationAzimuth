@@ -31,9 +31,10 @@ model = TauPyModel(model="iasp91")
 station_coordinates = []
 for network in inventory:
     for station in network:
-        station_coordinates.append((network.code, station.code, 
-                                    station.latitude, station.longitude, 
-                                    station.elevation, channel.azimuth))
+        for channel in station:
+            station_coordinates.append((network.code, station.code, 
+                                        station.latitude, station.longitude, 
+                                        station.elevation, channel.azimuth))
 
 for station in station_coordinates:        
     DegDist = locations2degrees(eventLat, eventLon,
@@ -43,28 +44,39 @@ for station in station_coordinates:
     arrivals = model.get_travel_times(source_depth_in_km = eventDepth,
                                       distance_in_degree=DegDist,
                                       phase_list = ["P"])
-    if DegDist > 25 and DegDist < 90:
 
-        arrTime=eventTime + arrivals[0].time    
-        bTime=arrTime-200
-        eTime=arrTime+300
-        try:
-            st = client.get_waveforms(station[0],station[1],"00","BH?",
-                                      bTime,eTime,attach_response=True)
-        except:
-            print("No data for station "+station[1])
-            continue        
+    arrTime=eventTime + arrivals[0].time    
+    bTime=arrTime-200
+    eTime=arrTime+300
+    try:
+        st = client.get_waveforms(station[0],station[1],"00","BH?",
+                                  bTime,eTime,attach_response=True)
+    except:
+        print("No data for station "+station[1])
+        continue        
 # Break up the stream into traces to remove the gain
-        BH1 = st[0]
-        BH2 = st[1]
-        BHZ = st[2]
+    BH1 = st[0]
+    BH2 = st[1]
+    BHZ = st[2]
+    BHZ.plot()
 # remove the gain        
-        st[0] = BH1.remove_sensitivity()
-        st[1] = BH2.remove_sensitivity()
-        st[2] = BHZ.remove_sensitivity()
-        st.plot()
-    else:
-        print("Station "+station[0]+" does not have P arrival.")
-    
+    st[0] = BH1.remove_sensitivity()
+    st[1] = BH2.remove_sensitivity()
+    st[2] = BHZ.remove_sensitivity()
+    st.plot()
+# traditionally, in SAC, we rmean;rtr;taper before filtering
+# the max percentage on the taper is to mimic the output I expect in sac
+    st[0] = BH1.detrend('demean')
+    st[1] = BH2.detrend('demean')
+    st[2] = BHZ.detrend('demean')
+    st.plot()
+    st[0] = BH1.taper(max_percentage=0.05)
+    st[1] = BH2.taper(max_percentage=0.05)
+    st[2] = BHZ.taper(max_percentage=0.05)
+    st.plot()
+# now, we actually filter!
+    st[0]=BH1.filter('lowpass', freq=0.5, corners=4, zerophase=True)
+    st[1]=BH2.filter('lowpass', freq=0.5, corners=4, zerophase=True)
+    st[2]=BHZ.filter('lowpass', freq=0.5, corners=4, zerophase=True)
+    st.plot()
 
-        

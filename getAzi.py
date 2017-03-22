@@ -26,7 +26,7 @@ network = "IU"
 # first build the inventory of stations
 print("building station list for the event")
 client = Client("IRIS")
-inventory = client.get_stations(network="IU", station="*", 
+inventory = client.get_stations(network="IU", station="ANMO", 
                                 channel="BH1",level="response",
                                 starttime=eventTime)
 
@@ -79,34 +79,38 @@ for station in station_coordinates:
 # use this line if you want to see the plots
 #        st.remove_response(output="DISP",pre_filt=prefilt,plot=True)
 # Break up the stream into traces to remove the gain
-        BHZ = st[0]
-        BH1 = st[1]
-        BH2 = st[2]
+        BH1 = st[0]
+        BH2 = st[1]
+        BHZ = st[2]
+        print('check the component')
+        print('check the component')
+        BHZ.plot()
+        BH1.plot()
 
-        st[0] = BHZ.remove_sensitivity()
-        st[1] = BH1.remove_sensitivity()
-        st[2] = BH2.remove_sensitivity()
+        st[0] = BH1.remove_sensitivity()
+        st[1] = BH2.remove_sensitivity()
+        st[2] = BHZ.remove_sensitivity()
          
 # take a look at the data
         st.plot()
 # make sure we are in NE orientation
-        BHE = st[2]
-        BHN = st[1]
-        BHZ = st[0]
+        BHN = st[0]
+        BHE = st[1]
+        BHZ = st[2]
         station_orientation = station[5]
         if (station_orientation != 0.0):
-            BHE = ( sin(station_orientation)*st[1] 
-                +   cos(station_orientation)*st[2])
-            BHN = (-sin(station_orientation)*st[2] 
+            BHE.data = ( sin(station_orientation)*st[0] 
                 +   cos(station_orientation)*st[1])
+            BHN.data = (-sin(station_orientation)*st[2] 
+                +   cos(station_orientation)*st[0])
+        BHE.plot()
+        BHN.plot()
+
         
 # next we need to filter.
-        tr_filt = BHZ
-        tr_filt.filter('lowpass', freq=0.5, corners = 4, zerophase = True) 
-
-
-
-#        st.rotate('NE->RT')
+#        tr_filt = BHZ
+#        tr_filt.filter('lowpass', freq=0.5, corners = 4, zerophase = True) 
+         
          
     else:
         print("Station "+ station[1] +"doesn't fit in parameters for P-wave arrivals")
