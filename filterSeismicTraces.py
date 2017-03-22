@@ -7,6 +7,8 @@ from obspy import UTCDateTime
 from obspy.geodetics.base import locations2degrees
 from obspy.geodetics.base import gps2dist_azimuth
 from obspy.taup import TauPyModel
+import numpy as np
+import matplotlib.pyplot as plt
 
 client = Client("IRIS")
 
@@ -17,7 +19,9 @@ eventLat=-19.281
 eventLon=-63.905
 eventDepth = 597.
 
-inventory = client.get_stations(network="IU", station="*", starttime=t)
+inventory = client.get_stations(network="IU", station="ANMO",
+                                channel="BH1", level="response",
+                                starttime=eventTime)
 model = TauPyModel(model="iasp91")
 
 # to plot up all the stations...
@@ -29,8 +33,7 @@ for network in inventory:
     for station in network:
         station_coordinates.append((network.code, station.code, 
                                     station.latitude, station.longitude, 
-                                    station.elevation))
-
+                                    station.elevation, channel.azimuth))
 
 for station in station_coordinates:        
     DegDist = locations2degrees(eventLat, eventLon,
@@ -55,7 +58,7 @@ for station in station_coordinates:
         BH1 = st[0]
         BH2 = st[1]
         BHZ = st[2]
-  
+# remove the gain        
         st[0] = BH1.remove_sensitivity()
         st[1] = BH2.remove_sensitivity()
         st[2] = BHZ.remove_sensitivity()
