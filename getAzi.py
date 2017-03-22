@@ -92,7 +92,7 @@ for station in station_coordinates:
 
 # make sure we are in NE orientation
 # we may decide to take this step out - find out if we assume N/S does
-# the program spit out the azimuth we have in the metadata
+# the program spit out the azimuth we have in the metadata?
         BHN = st[0]
         BHE = st[1]
         BHZ = st[2]
@@ -119,6 +119,8 @@ for station in station_coordinates:
         st[1]=BH2.filter('lowpass', freq=0.5, corners=4, zerophase=True)
         st[2]=BHZ.filter('lowpass', freq=0.5, corners=4, zerophase=True)
         st.plot() 
+# time to get serious!  we are ready to do the actual calculation!!!!!!!!
+        
          
     else:
         print("Station "+ station[1] +"doesn't fit in parameters for P-wave arrivals")

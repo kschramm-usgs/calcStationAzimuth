@@ -79,4 +79,20 @@ for station in station_coordinates:
     st[1]=BH2.filter('lowpass', freq=0.5, corners=4, zerophase=True)
     st[2]=BHZ.filter('lowpass', freq=0.5, corners=4, zerophase=True)
     st.plot()
+# now, calculate the signal to noise ratio.
+    NoiseBH1 = BH1.copy()
+    NoiseBH2 = BH2.copy()
+    NoiseStart = BH1.stats.starttime + 10
+    NoiseEnd = BH1.stats.starttime + 150
+    NoiseBH1.trim(NoiseStart, NoiseEnd)
+    NoiseBH1.plot()
 
+# need to try other times than iasp.  austin says usgs uses ak135
+    SignalBH1 = BH1.copy()
+    SignalBH2 = BH2.copy()
+    SignalStart = arrTime
+    SignalEnd = arrTime+10
+    SignalBH1.trim(SignalStart, SignalEnd)
+    print(arrTime)
+    print(arrTime+10)
+    SignalBH1.plot()
