@@ -22,7 +22,7 @@ DegDist = locations2degrees(staLat, staLon, eqLat, eqLon)
 
 
 # get the station azimuth, back az and distance in meters...
-StatAzim = gps2dist_azimuth(staLat, staLon, eqLat, eqLon)
+StatAzim = gps2dist_azimuth(eqLat, eqLon, staLat, staLon)
 
 
 # print the result
