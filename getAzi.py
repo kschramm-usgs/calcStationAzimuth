@@ -8,6 +8,7 @@ from obspy.taup import TauPyModel
 from numpy import sin, cos
 from numpy import arctan as atan
 from scipy.sparse.linalg import lsqr
+from scipy.linalg import eig
 import numpy as np
 
 
@@ -147,9 +148,46 @@ for station in station_coordinates:
      
         print(SNR_BHN, SNR_BHE, SNR_BHZ)
 # normalize
-        BHN.normalize
-        BHE.normalize
-        BHZ.normalize
+# the obspy does not seem to be working...
+#        BHN.normalize
+#        BHE.normalize
+#        BHZ.normalize
+#        BHN.plot()
+#        BHE.plot()
+#        BHZ.plot()
+#normalize with Adam's method
+#        BHNmax=SignalBHN.max()
+#        BHNmax=np.max(SignalBHN.data)
+#        print "bhn max"
+#        print (BHNmax, BHNmaax)
+#        BHNmin=np.min(SignalBHN.data)
+#        print (BHNmin)
+#        BHEmax=np.max(SignalBHE.data)
+#        BHEmin=np.min(SignalBHE.data)
+#        BHN_range=BHNmax-BHNmin
+#        BHE_range=BHEmax-BHEmin
+#        BHHmax=np.max([BHN_range,BHE_range])
+#        BHNmine=BHHmax*BHNmin/BHN_range
+#        BHEmine=BHHmax*BHEmin/BHE_range
+#        BHNmaxe=BHHmax*BHNmax/BHN_range
+#        BHEmaxe=BHHmax*BHEmax/BHE_range
+#        SignalBHN.data=SignalBHN.data+(BHNmaxe+BHNmine+BHNmax-BHNmin)/2
+#        SignalBHE.data=SignalBHE.data+(BHEmaxe+BHEmine+BHEmax-BHEmin)/2
+#        SignalBHN.plot()
+#        SignalBHE.plot()
+# ok, that also didn't work.  grrrr. why is this so complicated.  now
+# we try the Kim Schramm method.    
+        BHNmax=np.max(abs(SignalBHN.data))
+        BHNmin=np.min(abs(SignalBHN.data))
+        BHEmax=np.max(abs(SignalBHE.data))
+        BHEmin=np.min(abs(SignalBHE.data))
+        SignalBHN.data = SignalBHN.data/BHNmax
+        SignalBHN.plot()
+        SignalBHE.data = SignalBHE.data/BHEmax
+        SignalBHE.plot()
+        
+
+
     
 # time to get serious!  we are ready to do the actual calculation!!!!!!!!
         #crap.  dimension mismatch
@@ -159,8 +197,22 @@ for station in station_coordinates:
 
         lresult = lsqr(A,b)
         ang = np.degrees(atan(1./lresult[0]))
+        print "The answer you are looking for:"
         print(ang)
-        
+
+# is this correct?  Adam uses this to calculate the linearity.
+        BHNsq = sum(SignalBHN.data*SignalBHN.data)
+        BHNEsq = sum(SignalBHN.data*SignalBHE.data)
+        BHEsq = sum(SignalBHE.data*SignalBHE.data)
+        print BHNsq, BHNEsq, BHEsq
+        eigMat = np.matrix([[BHNsq, BHNEsq], [BHNEsq, BHEsq]])
+        eigd,eigv = eig(eigMat)
+        print "The eigen vals:"
+        print eigd
+        line = (eigd[1]/(eigd[0]+eigd[1]))-(eigd[0]/(eigd[0]+eigd[1]))       
+        print "The linearity:"
+        print line
+
         
          
     else:
