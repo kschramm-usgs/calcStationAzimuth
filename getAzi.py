@@ -10,6 +10,7 @@ from numpy import arctan as atan
 from scipy.sparse.linalg import lsqr
 from scipy.linalg import eig
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 ''' 
@@ -19,19 +20,26 @@ This is a translation of Adam Ringler's matlab function.
 
 '''
 
-eventTime = UTCDateTime("2017-02-21T14:09:04")
-eventLat = -19.284
-eventLon = -63.899
-eventDepth = 597
+# event in bolivia
+#eventTime = UTCDateTime("2017-02-21T14:09:04")
+#eventLat = -19.284
+#eventLon = -63.899
+#eventDepth = 597
 
-station = "ANMO"
-network = "IU"
+# event in philipines
+eventTime = UTCDateTime("2017-01-10T06:13:48")
+eventLat = 4.478
+eventLon = 122.617
+eventDepth = 627.2
+
+#station = "ANMO"
+#network = "IU"
 
 # get station info
 # first build the inventory of stations
 print("building station list for the event")
 client = Client("IRIS")
-inventory = client.get_stations(network="IU", station="ANMO", 
+inventory = client.get_stations(network="IU", station="CTAO", 
                                 channel="BH1",level="response",
                                 location="00",starttime=eventTime)
 
@@ -57,6 +65,8 @@ for station in station_coordinates:
                                 station[2], station[3])
     StationAziExpec = gps2dist_azimuth(eventLat, eventLon,
                                        station[2], station[3]) 
+    print "The expected back azimuth:"
+    print(StationAziExpec)
 # need to add tolerance for distance so that we are only using P-arrivals
 # need to talk to tyler about which P should be used?  P? Pdiff? pP? PP?
 # tyler also feels we really want a direct P at teleseismic distances, so 
@@ -190,17 +200,16 @@ for station in station_coordinates:
 
     
 # time to get serious!  we are ready to do the actual calculation!!!!!!!!
-        #crap.  dimension mismatch
         A = np.transpose(np.matrix(SignalBHE.data))
         b = SignalBHN.data
         print A.shape,b.shape
 
         lresult = lsqr(A,b)
-        ang = np.degrees(atan(1./lresult[0]))
+        ang = np.degrees(np.arctan2(1.,lresult[0]))
         print "The answer you are looking for:"
         print(ang)
 
-# is this correct?  Adam uses this to calculate the linearity.
+# Adam uses this to calculate the linearity.
         BHNsq = sum(SignalBHN.data*SignalBHN.data)
         BHNEsq = sum(SignalBHN.data*SignalBHE.data)
         BHEsq = sum(SignalBHE.data*SignalBHE.data)
@@ -209,12 +218,53 @@ for station in station_coordinates:
         eigd,eigv = eig(eigMat)
         print "The eigen vals:"
         print eigd
+        print "The eigen vecs:"
+        print eigv
         line = (eigd[1]/(eigd[0]+eigd[1]))-(eigd[0]/(eigd[0]+eigd[1]))       
         print "The linearity:"
         print line
 
-        
-         
+# what is the motivation for these calculations?
+# now do some stuff about the quadrant?
+        ang2 = np.degrees(np.arctan2(eigv[0][1],eigv[1][1]))
+        print "This is a different value for the angle:"
+        print ang2
+        if (ang2<0):
+            ang2 = ang2+180
+        if abs(StationAziExpec[1]-(ang2+180))<abs(StationAziExpec[1]-ang2):
+            ang2 = np.mod(ang2+180,360)
+        if(ang<0):
+            ang=ang+180;
+        if(abs(StationAziExpec[1]-(ang+180))<abs(StationAziExpec[1]-ang)):
+            ang=np.mod(ang+180,360)
+        print "This is a different angle:"
+        print ang2
+        print "Not sure why Adam is calculating this:"
+        print(ang)
+# what about plotting particle motion...
+# need to get amplitudes in plot them up.
+# would be nice to see the a line at the calculated angle...
+# can we look at the phase of the seismograms to get the quadrant?
+# now create a nice plot. 
+        ax = plt.subplot(111, projection='polar')
+        ax.set_theta_zero_location("N")
+        ax.set_theta_direction(-1)
+        theta = np.arctan2(SignalBHE.data,SignalBHN.data)
+        r = np.sqrt(SignalBHE.data*SignalBHE.data 
+                  + SignalBHN.data*SignalBHN.data)
+        #print r
+        #print theta
+        plt.plot(theta,r,'red',label='Particle Motion')
+        calcR = [1.5, 1.5]
+        calcTheta = [np.radians(ang),np.radians(ang+180)]
+        expcTheta = ([np.radians(StationAziExpec[2]), 
+                      np.radians(StationAziExpec[2]+180)])
+        plt.plot(calcTheta,calcR,'blue',label='Calculated Baz')
+        plt.plot(expcTheta,calcR,'black',label='Expected Baz')
+        ax.legend(loc='upper left')
+        plt.show()
+
+
     else:
         print("Station "+ station[1] +"doesn't fit in parameters for P-wave arrivals")
 
