@@ -41,12 +41,17 @@ def getargs():
     parser.add_argument('-eventLat',type=float, action = "store",
                          dest="eventLat", required=True,
                          default =-19.284,
-                         help="Enter the lat, lon, depth for the event")
+                         help="Enter the latitude for the event")
 
     parser.add_argument('-eventLon',type=float, action = "store",
                          dest="eventLon", required=True,
                          default =-63.899,
                          help="Enter the longitude for the event")
+
+    parser.add_argument('-eventDepth',type=float, action = "store",
+                         dest="eventDepth", required=True,
+                         default = 597,
+                         help="Enter the depth for the event")
 
     parser.add_argument('-n', type=str, action="store",
                          dest = "network", required=True,
@@ -119,7 +124,7 @@ if __name__ == "__main__":
     eventTime = UTCDateTime(parserval.eventTime)
     eventLat = parserval.eventLat
     eventLon = parserval.eventLon
-    eventDepth = 597
+    eventDepth = parserval.eventDepth
 
 #check for existence of the result directory
     resultdir = parserval.resDir
@@ -166,7 +171,7 @@ if __name__ == "__main__":
 # for p-waves.
 # pick a model for estimating arrival times
     print("calculating travel times and requesting data")
-    model = TauPyModel(model="ak135")
+    model = TauPyModel(model="iasp91")
     for station in station_coordinates:
 # first calculate the source-receiver distance
         DegDist = locations2degrees(eventLat, eventLon,
@@ -242,8 +247,19 @@ if __name__ == "__main__":
                 BHN = st2[3].copy()
                 BHE = st2[4].copy()
             st2.plot()
-            st.plot()
-                
+
+# want to look at plots with travel times...
+            plt.subplot(3,1,1)
+            plt.plot(st[0].data,label='BH1')
+            plt.legend()
+            print arrTime
+            plt.subplot(3,1,2)
+            plt.plot(st[1].data,label='BH2')
+            plt.legend()
+            plt.subplot(3,1,3)
+            plt.plot(st[2].data,label='BHZ')
+            plt.legend()
+            plt.show()
 # next we need to filter.
             BHN.detrend('demean')
             BHE.detrend('demean')
@@ -273,7 +289,7 @@ if __name__ == "__main__":
             SignalBHE = BHE.copy()
             SignalBHZ = BHZ.copy()
             SignalStart = arrTime-1
-            SignalEnd = arrTime+8
+            SignalEnd = arrTime+15
             SignalBHN.trim(SignalStart, SignalEnd)
             SignalBHE.trim(SignalStart, SignalEnd)
             SignalBHZ.trim(SignalStart, SignalEnd)
@@ -363,9 +379,9 @@ if __name__ == "__main__":
             statfile.write(str(line)+'\n')
 
 # don't look at the plot if it's not worth your time.
-            if abs(line) < 0.8:
-                print("Linearity value bad.  Skipping station.")
-                continue
+#            if abs(line) < 0.8:
+#                print("Linearity value bad.  Skipping station.")
+#                continue
 # now create a nice plot. 
             ax = plt.subplot(111, projection='polar')
             ax.set_theta_zero_location("N")
