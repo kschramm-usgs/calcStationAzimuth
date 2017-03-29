@@ -5,6 +5,7 @@ from obspy.clients.fdsn import Client
 from obspy.geodetics.base import locations2degrees
 from obspy.geodetics.base import gps2dist_azimuth
 from obspy.taup import TauPyModel
+from obspy import Stream
 from numpy import sin, cos
 from numpy import arctan as atan
 from scipy.sparse.linalg import lsqr
@@ -23,6 +24,7 @@ This is a translation of Adam Ringler's matlab function.
 
 '''
 
+########################################################################
 def getargs():
     """ Grab command line arguments to run program. """
     parser = argparse.ArgumentParser(description = "Program to calculate station azimuth from p-wave particle motion")
@@ -61,6 +63,52 @@ def getargs():
 
     parserval=parser.parse_args()
     return parserval
+
+########################################################################
+
+def rotatehorizontal(stream, angle1, angle2):
+    """
+    A function to rotate the horizontal components of a seismometer from 
+    radial and transverse into E and North components.
+
+    taken from syncomp.py.  
+    
+    changed math.radians to np.radians
+    """
+    debugRot = False
+    if stream[0].stats.channel in set(['LHE', 'LHN', 'BHE', 'BHN']):
+        stream.sort(['channel'], reverse=True)
+        angle1, angle2 = angle2, angle1
+    if debugRot:
+        print(stream)
+        print 'Angle1: ' + str(angle1) + ' Angle2: ' + str(angle2)
+    theta_r1 = np.radians(angle1)
+    theta_r2 = np.radians(angle2)
+    swapSecond = False
+    if (angle2 >= 180. and angle2 <= 360.) or angle2 == 0.:
+        swapSecond = True 
+# if the components are swaped swap the matrix
+    if theta_r1 > theta_r2 and swapSecond:
+        if debugRot:
+            print 'Swap the components: ' + str((360. - angle1) - angle2)
+        stream.sort(['channel'], reverse=True)
+        theta_r1, theta_r2 = theta_r2, theta_r1
+        print(stream)
+# create new trace objects with same info as previous
+    rotatedN = stream[0].copy()
+    rotatedE = stream[1].copy()
+# assign rotated data
+    rotatedN.data = stream[0].data*np.cos(-theta_r1) +\
+        stream[1].data*np.sin(-theta_r1)
+    rotatedE.data = -stream[1].data*np.cos(-theta_r2-np.pi/2.) +\
+        stream[0].data*np.sin(-theta_r2-np.pi/2.)
+    rotatedN.stats.channel = 'BHN'
+    rotatedE.stats.channel = 'BHE'
+# return new streams object with rotated traces
+    streamsR = Stream(traces=[rotatedN, rotatedE])
+    return streamsR
+
+########################################################################
 
 # Start of the main part of the program
 if __name__ == "__main__":
@@ -168,24 +216,33 @@ if __name__ == "__main__":
             #st.plot()
 
 # make sure we are in NE orientation
-# we may decide to take this step out - find out if we assume N/S does
-# the program spit out the azimuth we have in the metadata?
+# using the function from syncomp.py
             BHN = st[0].copy()
             BHE = st[1].copy()
             BHZ = st[2].copy()
-            station_orientation = station[5]
-            if (station_orientation != 0.0):
-                statO = np.radians(station_orientation)
-                print("Rotating station to N/E. Correction Angle is: "
-                      +str(station_orientation))
-                #BHN.data = (sin(station_orientation)*BHN.data
-                #    +   cos(station_orientation)*BHE.data)
-                #BHE.data = (sin(-station_orientation)*BHE.data
-                #    +   cos(station_orientation)*BHN.data)
-                BHN.data = (sin(statO)*BHN.data
-                    +   cos(statO)*BHE.data)
-                BHE.data = (sin(-statO)*BHE.data
-                    +   cos(statO)*BHN.data)
+            st2=st.copy() 
+            
+            statOrientation = station[5]
+            statOrientation2 = station[5]+90
+            if (statOrientation != 0.0):
+                st2 += rotatehorizontal(st2,statOrientation,
+                                        statOrientation2)
+# use Adam's rotation function from the syncomp programt
+#                statO = np.radians(station_orientation)
+#                print("Rotating station to N/E. Correction Angle is: "
+#                      +str(station_orientation))
+#                #BHN.data = (sin(station_orientation)*BHN.data
+#                #    +   cos(station_orientation)*BHE.data)
+#                #BHE.data = (sin(-station_orientation)*BHE.data
+#                #    +   cos(station_orientation)*BHN.data)
+#                BHN.data = (sin(statO)*BHN.data
+#                    +   cos(statO)*BHE.data)
+#                BHE.data = (sin(-statO)*BHE.data
+#                    +   cos(statO)*BHN.data)
+                BHN = st2[3].copy()
+                BHE = st2[4].copy()
+            st2.plot()
+            st.plot()
                 
 # next we need to filter.
             BHN.detrend('demean')
@@ -327,7 +384,8 @@ if __name__ == "__main__":
             plt.plot(expcTheta,calcR,'black',label=label3)
             plt.plot(theta,r,'red',label='Particle Motion')
             plt.legend(bbox_to_anchor=(0., 1.02, 1., 0.102),loc=3,borderaxespad=0.)
-            plt.text(np.pi,2,str(station[1]))
+            plt.text(0,1.8,str(station[1]))
+            plt.text(2*np.pi/3,1.8,('linearity = '+str(line)))
             plt.show()
 
 
