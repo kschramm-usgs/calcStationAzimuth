@@ -259,6 +259,7 @@ if __name__ == "__main__":
          
 # calculate the SNR - I forsee putting in something here to skip calculation
 # if the SNR is below a defined tolerance.
+# The signal is defined as 1 second before predicted arrival and 8 seconds after
             NoiseBHN = BHN.copy()
             NoiseBHE = BHE.copy()
             NoiseBHZ = BHZ.copy()
@@ -268,7 +269,6 @@ if __name__ == "__main__":
             NoiseBHE.trim(NoiseStart, NoiseEnd)
             NoiseBHZ.trim(NoiseStart, NoiseEnd)
      
-# need to try other times than iasp.  austin says usgs uses ak135
             SignalBHN = BHN.copy()
             SignalBHE = BHE.copy()
             SignalBHZ = BHZ.copy()
@@ -282,7 +282,8 @@ if __name__ == "__main__":
             SNR_BHE = (SignalBHE.std()**2)/(NoiseBHE.std()**2)
             SNR_BHZ = (SignalBHZ.std()**2)/(NoiseBHZ.std()**2)
      
-            #print(SNR_BHN, SNR_BHE, SNR_BHZ)
+            print("Signal to Noise")
+            print(SNR_BHN, SNR_BHE, SNR_BHZ)
 # normalize
             BHNmax=np.max(abs(SignalBHN.data))
             BHNmin=np.min(abs(SignalBHN.data))
@@ -326,7 +327,8 @@ if __name__ == "__main__":
             #print eigd
             #print "The eigen vecs:"
             #print eigv.real
-            line = (eigd[1]/(eigd[0]+eigd[1]))-(eigd[0]/(eigd[0]+eigd[1]))       
+            line = np.real((eigd[1]/(eigd[0]+eigd[1]))-
+                           (eigd[0]/(eigd[0]+eigd[1])))
             #print "The linearity:"
             #print line
 
@@ -376,17 +378,28 @@ if __name__ == "__main__":
             calcTheta2 = [np.radians(ang2),np.radians(ang2+180)]
             expcTheta = ([np.radians(StationAziExpec[2]), 
                           np.radians(StationAziExpec[2]+180)])
-            label1='Calculated Baz = '+str(ang)
-            label2='Calculated Baz 2 = '+str(ang2)
-            label3='Expected Baz = '+str(StationAziExpec[2])
+            label1="Calculated Baz = %.2f" % (ang)
+            label2="Calculated Baz 2 = %.2f" % (ang2)
+            label3="Expected Baz = %.2f" % (StationAziExpec[2])
             plt.plot(calcTheta,calcR,'blue',label=label1)
             plt.plot(calcTheta2,calcR,'cyan',label=label2)
             plt.plot(expcTheta,calcR,'black',label=label3)
             plt.plot(theta,r,'red',label='Particle Motion')
-            plt.legend(bbox_to_anchor=(0., 1.02, 1., 0.102),loc=3,borderaxespad=0.)
-            plt.text(0,1.8,str(station[1]))
-            plt.text(2*np.pi/3,1.8,('linearity = '+str(line)))
+            plt.legend(bbox_to_anchor=(0.8, 0.90, 1., 0.102),loc=3,borderaxespad=0.)
+            plt.text(7*np.pi/4,2.5,str(station[1]),fontsize=18)
+            #linetxt = "{%10.2f}".format(line)
+            printstr="linearity %.2f" % (line)
+            printstr1="SNR, BHN %.2f" % (SNR_BHN)
+            printstr2="SNR, BHE %.2f" % (SNR_BHE)
+            plt.text(32*np.pi/20,2.7,(printstr+'\n'+
+                     printstr1+'\n'+printstr2))
+            #plt.text(33.5*np.pi/20,2.68,('SNR_BHN = '+str(SNR_BHN)))
+            #plt.text(33*np.pi/20,2.66,('SNR_BHE = '+str(SNR_BHE)))
+            
+
             plt.show()
+            
+
 
 
 
