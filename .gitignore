@@ -32,3 +32,6 @@
 *~
 *.swp
 *.swo
+
+# output files - anything with a .csv
+*.csv
