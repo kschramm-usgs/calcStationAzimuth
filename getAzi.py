@@ -294,6 +294,7 @@ if __name__ == "__main__":
             SignalBHN.data = SignalBHN.data/normFac
             SignalBHE.data = SignalBHE.data/normFac
             SignalBHZ.data = SignalBHZ.data/normFac
+            plt.figure()
             plt.subplot(3,1,1)
             plt.suptitle('Filtered, rotated and cut waveforms for %s'%(station[1]))
             plt.plot(SignalBHN.data,label='BHN')
@@ -311,6 +312,7 @@ if __name__ == "__main__":
             print fileName
             plt.savefig(fileName,format='png')
             #plt.show()
+            plt.close()
     
 # time to get serious!  we are ready to do the actual calculation!!!!!!!!
             A = np.transpose(np.matrix(SignalBHE.data))
@@ -360,7 +362,7 @@ if __name__ == "__main__":
 #                continue
 
 # now create a nice plot. 
-            #plt.figure()
+            plt.figure()
             ax = plt.subplot(111, projection='polar')
             ax.set_theta_zero_location("N")
             ax.set_theta_direction(-1)
