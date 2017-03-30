@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     statfile = open(os.getcwd()+'/'+parserval.resDir+'/Results_'+
                     str(eventTime)+'_'+parserval.network+'.csv','w')
-    statfile.write('station, channel, expected Baz, calc Baz 1, calcBaz2, linearity\n')
+    statfile.write('station, channel, expected Baz, calc Baz 1, difference, calcBaz2, difference, linearity\n')
 
 # event in philipines
 #eventTime = UTCDateTime("2017-01-10T06:13:48")
@@ -203,11 +203,7 @@ if __name__ == "__main__":
             except:
                 print("No data for station "+station[1])
                 continue #use a continue to go back to the beginning of the loop
-#        prefilt = (1/4.,1/2., 10., 20.) # this may need to be changed, but 
-#                                         I will need to discuss with tyler
-#        st.remove_response(output="DISP",pre_filt=prefilt)
-# use this line if you want to see the plots
-#        st.remove_response(output="DISP",pre_filt=prefilt,plot=True)
+
 # Break up the stream into traces to remove the gain
             BH1 = st[0]
             BH2 = st[1]
@@ -232,18 +228,6 @@ if __name__ == "__main__":
             if (statOrientation != 0.0):
                 st2 += rotatehorizontal(st2,statOrientation,
                                         statOrientation2)
-# use Adam's rotation function from the syncomp programt
-#                statO = np.radians(station_orientation)
-#                print("Rotating station to N/E. Correction Angle is: "
-#                      +str(station_orientation))
-#                #BHN.data = (sin(station_orientation)*BHN.data
-#                #    +   cos(station_orientation)*BHE.data)
-#                #BHE.data = (sin(-station_orientation)*BHE.data
-#                #    +   cos(station_orientation)*BHN.data)
-#                BHN.data = (sin(statO)*BHN.data
-#                    +   cos(statO)*BHE.data)
-#                BHE.data = (sin(-statO)*BHE.data
-#                    +   cos(statO)*BHN.data)
                 BHN = st2[3].copy()
                 BHE = st2[4].copy()
             st2.plot()
@@ -260,7 +244,7 @@ if __name__ == "__main__":
             plt.plot(st[2].data,label='BHZ')
             plt.legend()
             plt.show()
-# next we need to filter.
+# next we need to filter. first some waveform prep...
             BHN.detrend('demean')
             BHE.detrend('demean')
             BHZ.detrend('demean')
@@ -325,35 +309,21 @@ if __name__ == "__main__":
 # time to get serious!  we are ready to do the actual calculation!!!!!!!!
             A = np.transpose(np.matrix(SignalBHE.data))
             b = SignalBHN.data
-            #print A.shape,b.shape
 
             lresult = lsqr(A,b)
             ang = np.degrees(np.arctan2(1.,lresult[0]))
-            #print "The answer you are looking for:"
-            #print(ang)
 
 # Adam uses this to calculate the linearity.
             BHNsq = sum(SignalBHN.data*SignalBHN.data)
             BHNEsq = sum(SignalBHN.data*SignalBHE.data)
             BHEsq = sum(SignalBHE.data*SignalBHE.data)
-            #print BHNsq, BHNEsq, BHEsq
             eigMat = np.matrix([[BHNsq, BHNEsq], [BHNEsq, BHEsq]])
             eigd,eigv = eig(eigMat)
-            #print "The eigen vals:"
-            #print eigd
-            #print "The eigen vecs:"
-            #print eigv.real
             line = np.real((eigd[1]/(eigd[0]+eigd[1]))-
                            (eigd[0]/(eigd[0]+eigd[1])))
-            #print "The linearity:"
-            #print line
-
-# what is the motivation for these calculations?
-# now do some stuff about the quadrant?
             ang2 = np.degrees(np.arctan2(eigv[0][1],eigv[1][1]))
-            #print "This is a different value for the angle:"
-            #print ang2
-            #print ang
+
+# now do some stuff about the quadrant
             if abs(statBaz-(ang2+180))<abs(statBaz-ang2):
                 ang2 = np.mod(ang2+180,360)
                 print"ang2 is 180 off: "+str(ang2) 
@@ -382,6 +352,7 @@ if __name__ == "__main__":
 #            if abs(line) < 0.8:
 #                print("Linearity value bad.  Skipping station.")
 #                continue
+
 # now create a nice plot. 
             ax = plt.subplot(111, projection='polar')
             ax.set_theta_zero_location("N")
@@ -403,21 +374,12 @@ if __name__ == "__main__":
             plt.plot(theta,r,'red',label='Particle Motion')
             plt.legend(bbox_to_anchor=(0.8, 0.90, 1., 0.102),loc=3,borderaxespad=0.)
             plt.text(7*np.pi/4,2.5,str(station[1]),fontsize=18)
-            #linetxt = "{%10.2f}".format(line)
             printstr="linearity %.2f" % (line)
             printstr1="SNR, BHN %.2f" % (SNR_BHN)
             printstr2="SNR, BHE %.2f" % (SNR_BHE)
             plt.text(32*np.pi/20,2.7,(printstr+'\n'+
                      printstr1+'\n'+printstr2))
-            #plt.text(33.5*np.pi/20,2.68,('SNR_BHN = '+str(SNR_BHN)))
-            #plt.text(33*np.pi/20,2.66,('SNR_BHE = '+str(SNR_BHE)))
-            
-
             plt.show()
-            
-
-
-
 
         else:
             print("Station "+ station[1] +" doesn't fit in parameters for P-wave arrivals")
