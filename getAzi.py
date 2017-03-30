@@ -147,6 +147,7 @@ if __name__ == "__main__":
     net = parserval.network
     stat = parserval.sta
     chan = parserval.cha
+    resDir = parserval.resDir
 
 # get station info
 # first build the inventory of stations
@@ -230,7 +231,7 @@ if __name__ == "__main__":
                                         statOrientation2)
                 BHN = st2[3].copy()
                 BHE = st2[4].copy()
-            st2.plot()
+            #st2.plot()
 
 # want to look at plots with travel times...
             plt.subplot(3,1,1)
@@ -243,7 +244,7 @@ if __name__ == "__main__":
             plt.subplot(3,1,3)
             plt.plot(st[2].data,label='BHZ')
             plt.legend()
-            plt.show()
+            #plt.show()
 # next we need to filter. first some waveform prep...
             BHN.detrend('demean')
             BHE.detrend('demean')
@@ -304,7 +305,12 @@ if __name__ == "__main__":
             plt.subplot(3,1,3)
             plt.plot(SignalBHZ.data,label='BHZ')
             plt.legend()
-            plt.show()
+            fileName =(os.getcwd() +'/'+ resDir +'/Input_'+
+                    station[0] +'_'+ station[1] +'_'+
+                    str(eventTime) + '.png')
+            print fileName
+            plt.savefig(fileName,format='png')
+            #plt.show()
     
 # time to get serious!  we are ready to do the actual calculation!!!!!!!!
             A = np.transpose(np.matrix(SignalBHE.data))
@@ -354,6 +360,7 @@ if __name__ == "__main__":
 #                continue
 
 # now create a nice plot. 
+            #plt.figure()
             ax = plt.subplot(111, projection='polar')
             ax.set_theta_zero_location("N")
             ax.set_theta_direction(-1)
@@ -379,7 +386,16 @@ if __name__ == "__main__":
             printstr2="SNR, BHE %.2f" % (SNR_BHE)
             plt.text(32*np.pi/20,2.7,(printstr+'\n'+
                      printstr1+'\n'+printstr2))
-            plt.show()
+            print station[0]
+            print eventTime.year
+            fileName =(os.getcwd() +'/'+ resDir +'/Azimuth_'+
+                    station[0] +'_'+ station[1] +'_'+
+                    str(eventTime) + '.png')
+            print fileName
+            plt.savefig(fileName,format='png')
+            #plt.show()
+
+                    
 
         else:
             print("Station "+ station[1] +" doesn't fit in parameters for P-wave arrivals")

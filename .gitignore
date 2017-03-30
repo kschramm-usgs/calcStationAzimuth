@@ -34,4 +34,8 @@
 *.swo
 
 # output files - anything with a .csv
+# or plots - pdf's pngs jpgs
 *.csv
+*.png
+*.pdf
+*.jpg
