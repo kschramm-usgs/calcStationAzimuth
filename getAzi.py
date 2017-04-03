@@ -254,9 +254,9 @@ if __name__ == "__main__":
             BHE.taper(max_percentage=0.05)
             BHZ.taper(max_percentage=0.05)
 # now, we actually filter!
-            BHN.filter('lowpass', freq=0.5, corners=4, zerophase=True)
-            BHE.filter('lowpass', freq=0.5, corners=4, zerophase=True)
-            BHZ.filter('lowpass', freq=0.5, corners=4, zerophase=True)
+            BHN.filter('lowpass', freq=0.05, corners=4, zerophase=True)
+            BHE.filter('lowpass', freq=0.05, corners=4, zerophase=True)
+            BHZ.filter('lowpass', freq=0.05, corners=4, zerophase=True)
          
 # calculate the SNR - I forsee putting in something here to skip calculation
 # if the SNR is below a defined tolerance.
@@ -274,7 +274,7 @@ if __name__ == "__main__":
             SignalBHE = BHE.copy()
             SignalBHZ = BHZ.copy()
             SignalStart = arrTime-1
-            SignalEnd = arrTime+15
+            SignalEnd = arrTime+30
             SignalBHN.trim(SignalStart, SignalEnd)
             SignalBHE.trim(SignalStart, SignalEnd)
             SignalBHZ.trim(SignalStart, SignalEnd)
@@ -366,22 +366,24 @@ if __name__ == "__main__":
             ax = plt.subplot(111, projection='polar')
             ax.set_theta_zero_location("N")
             ax.set_theta_direction(-1)
+# get the particle motion
             theta = np.arctan2(SignalBHE.data,SignalBHN.data)
             r = np.sqrt(SignalBHE.data*SignalBHE.data 
                   + SignalBHN.data*SignalBHN.data)
+# get the information for the lines
             calcR = [1.5, 1.5]
             calcTheta = [np.radians(ang),np.radians(ang+180)]
             calcTheta2 = [np.radians(ang2),np.radians(ang2+180)]
             expcTheta = ([np.radians(StationAziExpec[2]), 
                           np.radians(StationAziExpec[2]+180)])
-            label1="Calculated Baz = %.2f" % (ang)
-            label2="Calculated Baz 2 = %.2f" % (ang2)
-            label3="Expected Baz = %.2f" % (StationAziExpec[2])
+            label1="Baz_calc = %.2f" % (ang)
+            label2="Baz2_calc = %.2f" % (ang2)
+            label3="Baz_meas = %.2f" % (StationAziExpec[2])
+# actually plot the things
             plt.plot(calcTheta,calcR,'blue',label=label1)
             plt.plot(calcTheta2,calcR,'cyan',label=label2)
             plt.plot(expcTheta,calcR,'black',label=label3)
             plt.plot(theta,r,'red',label='Particle Motion')
-            plt.legend(bbox_to_anchor=(0.8, 0.90, 1., 0.102),loc=3,borderaxespad=0.)
             plt.text(7*np.pi/4,2.5,str(station[1]),fontsize=18)
             printstr="linearity %.2f" % (line)
             printstr1="SNR, BHN %.2f" % (SNR_BHN)
@@ -394,9 +396,41 @@ if __name__ == "__main__":
                     station[0] +'_'+ station[1] +'_'+
                     str(eventTime) + '.png')
             print fileName
+            #plt.close()
+            #plt.figure()
+            #x = SignalBHE.data**2.
+            #y = SignalBHN.data**2.
+            #plt.plot(x,y,marker="o")
+            #p = np.polyfit(x,y,1)
+            #print p
+            #ycalc = p[0]*x + p[1]
+            #plt.plot(x,ycalc,marker="v")
+            #pfitR=np.sqrt(x+ycalc**2.)
+            #calcR=[max(pfitR), abs(min(pfitR))]
+            #pfitTheta= np.arctan2(ycalc,SignalBHE.data)
+            #aveTheta=np.average(pfitTheta)
+            #plotAveTheta=[aveTheta, aveTheta+np.pi]
+            #print np.degrees(aveTheta)
+
+            print "Max r "+str(max(r))
+            print "Min r "+str(min(r))
+            print "Max index r "+str(np.argmax(r))
+            print "Min index r "+str(np.argmin(r))
+            #print np.degrees(theta)
+            print "theta at r max "+str(np.degrees(theta[np.argmax(r)]))
+            print "theta at r min "+str(np.degrees(theta[np.argmin(r)]))
+            print "Max index theta "+str(np.argmax(theta))
+            print "Min index theta "+str(np.argmin(theta))
+            print "Max theta "+str(np.degrees(np.max(theta)))
+            print "Min theta "+str(np.degrees(np.min(theta)))
+
+            #label4=("Baz_part = %.2f" % (np.degrees(aveTheta)))
+            #plt.plot(plotAveTheta, calcR,'orange',label=label4)
+            #plt.plot(pfitTheta, pfitR,'orange',label=label4)
+
+            plt.legend(bbox_to_anchor=(0.8, 0.85, 1., 0.102),loc=3,borderaxespad=0.)
             plt.savefig(fileName,format='png')
             #plt.show()
-
                     
 
         else:
