@@ -10,6 +10,7 @@ from numpy import sin, cos
 from numpy import arctan as atan
 from scipy.sparse.linalg import lsqr
 from scipy.linalg import eig
+from getCommandLineInfo import getargs
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
@@ -24,50 +25,6 @@ This is a translation of Adam Ringler's matlab function.
 
 '''
 
-########################################################################
-def getargs():
-    """ Grab command line arguments to run program. """
-    parser = argparse.ArgumentParser(description = "Program to calculate station azimuth from p-wave particle motion")
-
-    parser.add_argument('-resDir',type=str, action = "store",
-                        dest="resDir", required=True,
-                        help="Result directory name Example: blah")
-
-    parser.add_argument('-eventTime', type=str, action = "store",
-                         dest="eventTime", required=True,
-                         default ="2017-02-21T14:09:04",
-                         help="Enter a UTC time, ie: 2017-02-21T14:09:04")
-
-    parser.add_argument('-eventLat',type=float, action = "store",
-                         dest="eventLat", required=True,
-                         default =-19.284,
-                         help="Enter the latitude for the event")
-
-    parser.add_argument('-eventLon',type=float, action = "store",
-                         dest="eventLon", required=True,
-                         default =-63.899,
-                         help="Enter the longitude for the event")
-
-    parser.add_argument('-eventDepth',type=float, action = "store",
-                         dest="eventDepth", required=True,
-                         default = 597,
-                         help="Enter the depth for the event")
-
-    parser.add_argument('-n', type=str, action="store",
-                         dest = "network", required=True,
-                         help="Network name Example: IU")
-
-    parser.add_argument('-sta', type=str, action="store",
-                        dest="sta", required = False,
-                        help="Stations to use. Example with a \
-                                comma (,) separator : TUC,ANMO")
-
-    parser.add_argument('-cha', type=str, action="store",
-                        dest="cha", required = False,
-                        help="Channels to use. Example: BH*")
-
-    parserval=parser.parse_args()
-    return parserval
 
 ########################################################################
 
@@ -125,6 +82,7 @@ if __name__ == "__main__":
     eventLat = parserval.eventLat
     eventLon = parserval.eventLon
     eventDepth = parserval.eventDepth
+    print(eventTime,eventLat,eventLon,eventDepth)
 
 #check for existence of the result directory
     resultdir = parserval.resDir
@@ -152,11 +110,11 @@ if __name__ == "__main__":
 # get station info
 # first build the inventory of stations
     print("building station list for the event")
+    print (net,stat,chan,eventTime)
     client = Client("IRIS")
-    inventory = client.get_stations(network=net, station=stat,
-                                    channel=chan,level="response",
-                                    location="00",starttime=eventTime)
+    inventory = client.get_stations(network=net, station=stat, channel=chan,level="response", location="00",starttime=eventTime)
 
+    inventory.plot()
 # next, get the station coordinates
     print("getting station coordinates")
     station_coordinates = []
@@ -199,16 +157,23 @@ if __name__ == "__main__":
             bTime=arrTime-200
             eTime=arrTime+50
             try:
-                st = client.get_waveforms(station[0],station[1],"00","BH?",
-                                          bTime,eTime,attach_response=True)
+               # st = client.get_waveforms(station[0],station[1],"00","BH?",
+               #                           bTime,eTime,attach_response=True)
+                st = getMSDdata(station[0],station[1],"00","BH",btime,etime)
+                st.sort(keys=['channel'])
             except:
                 print("No data for station "+station[1])
                 continue #use a continue to go back to the beginning of the loop
 
 # Break up the stream into traces to remove the gain
-            BH1 = st[0]
-            BH2 = st[1]
-            BHZ = st[2]
+            try:
+                BH1 = st[0]
+                BH2 = st[1]
+                BHZ = st[2]
+
+            except:
+                print("Station "+ station[1] + " doesn't have 3-comp data.")
+                continue
 
             st[0] = BH1.remove_sensitivity()
             st[1] = BH2.remove_sensitivity()
@@ -226,11 +191,14 @@ if __name__ == "__main__":
             
             statOrientation = station[5]
             statOrientation2 = station[5]+90
+            rotated="Not Rotated"
             if (statOrientation != 0.0):
-                st2 += rotatehorizontal(st2,statOrientation,
+                st += rotatehorizontal(st,statOrientation,
                                         statOrientation2)
-                BHN = st2[3].copy()
-                BHE = st2[4].copy()
+                rotated="Rotated"
+#
+                BHN = st[3].copy()
+                BHE = st[4].copy()
             #st2.plot()
 
 # want to look at plots with travel times...
@@ -273,8 +241,8 @@ if __name__ == "__main__":
             SignalBHN = BHN.copy()
             SignalBHE = BHE.copy()
             SignalBHZ = BHZ.copy()
-            SignalStart = arrTime-1
-            SignalEnd = arrTime+30
+            SignalStart = arrTime-15
+            SignalEnd = arrTime+10
             SignalBHN.trim(SignalStart, SignalEnd)
             SignalBHE.trim(SignalStart, SignalEnd)
             SignalBHZ.trim(SignalStart, SignalEnd)
@@ -327,20 +295,29 @@ if __name__ == "__main__":
             BHEsq = sum(SignalBHE.data*SignalBHE.data)
             eigMat = np.matrix([[BHNsq, BHNEsq], [BHNEsq, BHEsq]])
             eigd,eigv = eig(eigMat)
+            print "The eigenvalues"
+            print eigd
             line = np.real((eigd[1]/(eigd[0]+eigd[1]))-
                            (eigd[0]/(eigd[0]+eigd[1])))
             ang2 = np.degrees(np.arctan2(eigv[0][1],eigv[1][1]))
 
 # now do some stuff about the quadrant
-            if abs(statBaz-(ang2+180))<abs(statBaz-ang2):
-                ang2 = np.mod(ang2+180,360)
-                print"ang2 is 180 off: "+str(ang2) 
+            if (ang2<0):
+                ang2 = abs(ang2)+90
+                print"ang2 lt 0"
+
             if (ang2<0):
                 ang2 = ang2+180
                 print"ang2 lt 0"
+
+            if abs(statBaz-(ang2+180))<abs(statBaz-ang2):
+                ang2 = np.mod(ang2+180,360)
+                print"ang2 is 180 off: "+str(ang2) 
+
             if(abs(statBaz-(ang+180))<abs(statBaz-ang)):
                 ang=np.mod(ang+180,360)
                 print"ang is 180 off: "+str(ang) 
+
             if(ang<0):
                 ang=ang+180;
                 print"ang lt 0"
@@ -367,11 +344,13 @@ if __name__ == "__main__":
             ax.set_theta_zero_location("N")
             ax.set_theta_direction(-1)
 # get the particle motion
-            theta = np.arctan2(SignalBHE.data,SignalBHN.data)
-            r = np.sqrt(SignalBHE.data*SignalBHE.data 
-                  + SignalBHN.data*SignalBHN.data)
+            #theta = np.arctan2(SignalBHN.data,SignalBHE.data)
+            #r = np.sqrt(SignalBHE.data*SignalBHE.data 
+            #      + SignalBHN.data*SignalBHN.data)
+# get the gradient on the particle motion
+            #gradPM = 
 # get the information for the lines
-            calcR = [1.5, 1.5]
+            calcR = [1., 1.]
             calcTheta = [np.radians(ang),np.radians(ang+180)]
             calcTheta2 = [np.radians(ang2),np.radians(ang2+180)]
             expcTheta = ([np.radians(StationAziExpec[2]), 
@@ -383,15 +362,14 @@ if __name__ == "__main__":
             plt.plot(calcTheta,calcR,'blue',label=label1)
             plt.plot(calcTheta2,calcR,'cyan',label=label2)
             plt.plot(expcTheta,calcR,'black',label=label3)
-            plt.plot(theta,r,'red',label='Particle Motion')
-            plt.text(7*np.pi/4,2.5,str(station[1]),fontsize=18)
+            #plt.plot(theta,r,'red',label='Particle Motion')
+            plt.plot(SignalBHE.data,SignalBHN.data, 'red',label='Particle Motion')
+            plt.text(7*np.pi/4,2.5,str(station[1]+' '+ rotated + ' '+str(eventTime)),fontsize=14)
             printstr="linearity %.2f" % (line)
             printstr1="SNR, BHN %.2f" % (SNR_BHN)
             printstr2="SNR, BHE %.2f" % (SNR_BHE)
             plt.text(32*np.pi/20,2.7,(printstr+'\n'+
                      printstr1+'\n'+printstr2))
-            print station[0]
-            print eventTime.year
             fileName =(os.getcwd() +'/'+ resDir +'/Azimuth_'+
                     station[0] +'_'+ station[1] +'_'+
                     str(eventTime) + '.png')
@@ -412,17 +390,17 @@ if __name__ == "__main__":
             #plotAveTheta=[aveTheta, aveTheta+np.pi]
             #print np.degrees(aveTheta)
 
-            print "Max r "+str(max(r))
-            print "Min r "+str(min(r))
-            print "Max index r "+str(np.argmax(r))
-            print "Min index r "+str(np.argmin(r))
-            #print np.degrees(theta)
-            print "theta at r max "+str(np.degrees(theta[np.argmax(r)]))
-            print "theta at r min "+str(np.degrees(theta[np.argmin(r)]))
-            print "Max index theta "+str(np.argmax(theta))
-            print "Min index theta "+str(np.argmin(theta))
-            print "Max theta "+str(np.degrees(np.max(theta)))
-            print "Min theta "+str(np.degrees(np.min(theta)))
+            #print "Max r "+str(max(r))
+            #print "Min r "+str(min(r))
+            #print "Max index r "+str(np.argmax(r))
+            #print "Min index r "+str(np.argmin(r))
+            ##print np.degrees(theta)
+            #print "theta at r max "+str(np.degrees(theta[np.argmax(r)]))
+            #print "theta at r min "+str(np.degrees(theta[np.argmin(r)]))
+            #print "Max index theta "+str(np.argmax(theta))
+            #print "Min index theta "+str(np.argmin(theta))
+            #print "Max theta "+str(np.degrees(np.max(theta)))
+            #print "Min theta "+str(np.degrees(np.min(theta)))
 
             #label4=("Baz_part = %.2f" % (np.degrees(aveTheta)))
             #plt.plot(plotAveTheta, calcR,'orange',label=label4)
@@ -431,6 +409,7 @@ if __name__ == "__main__":
             plt.legend(bbox_to_anchor=(0.8, 0.85, 1., 0.102),loc=3,borderaxespad=0.)
             plt.savefig(fileName,format='png')
             #plt.show()
+            plt.close()
                     
 
         else:
